@@ -171,7 +171,7 @@ async def recognize_song():
 
 async def RecordMain():
 
-    ChangeInfoText("Recording", 3)
+    ChangeInfoText("Aufnahme", 3)
     await recordAudio()
     information = await recognize_song()
 
