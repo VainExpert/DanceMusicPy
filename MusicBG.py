@@ -25,7 +25,7 @@ def MusicUIBG():
     wordCloudWhite.generate(text)
     wordCloudWhite.to_file("MusicNote.png")
     
-    img = Image.open('MusicNote.png')
-    img = img.resize((450,400))
-    img.save('MusicNote.png')
-    img.close()
+##    img = Image.open('MusicNote.png')
+##    img = img.resize((450,400))
+##    img.save('MusicNote.png')
+##    img.close()
