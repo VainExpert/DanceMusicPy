@@ -1,0 +1,184 @@
+{
+  "danceDB": [
+    {
+      "nameDe": "Samba",
+      "nameEng": "Samba",
+      "meter": "2/4",
+      "bpm": "96-104",
+      "mpm": "48-52",
+      "typeDe": "Latein",
+      "typeEng": "Latin"
+    },
+    {
+      "nameDe": "Cha cha cha",
+      "nameEng": "Cha cha cha",
+      "meter": "4/4",
+      "bpm": "120-124",
+      "mpm": "30-31",
+      "typeDe": "Latein",
+      "typeEng": "Latin"
+    },
+    {
+      "nameDe": "Rumba",
+      "nameEng": "Rumba",
+      "meter": "4/4",
+      "bpm": "100-144",
+      "mpm": "25-36",
+      "typeDe": "Latein",
+      "typeEng": "Latin"
+    },
+    {
+      "nameDe": "Paso Doble",
+      "nameEng": "Paso Doble",
+      "meter": "2/4",
+      "bpm": "116-124",
+      "mpm": "58-62",
+      "typeDe": "Latein",
+      "typeEng": "Latin"
+    },
+    {
+      "nameDe": "Jive",
+      "nameEng": "Jive",
+      "meter": "4/4",
+      "bpm": "152-176",
+      "mpm": "38-44",
+      "typeDe": "Swing",
+      "typeEng": "Swing"
+    },
+    {
+      "nameDe": "Langsamer Walzer",
+      "nameEng": "Slow Waltz",
+      "meter": "3/4",
+      "bpm": "84-90",
+      "mpm": "28-30",
+      "typeDe": "Walzer",
+      "typeEng": "Waltz"
+    },
+    {
+      "nameDe": "Tango",
+      "nameEng": "Tango",
+      "meter": "4/4",
+      "bpm": "120-128",
+      "mpm": "30-32",
+      "typeDe": "Tango",
+      "typeEng": "Tango"
+    },
+    {
+      "nameDe": "Tango Argentino",
+      "nameEng": "Tango Argentino",
+      "meter": "4/4",
+      "bpm": "112-140",
+      "mpm": "28-35",
+      "typeDe": "Tango",
+      "typeEng": "Tango"
+    },
+    {
+      "nameDe": "Wiener Walzer",
+      "nameEng": "Viennesse Waltz",
+      "meter": "3/4",
+      "bpm": "159-174",
+      "mpm": "53-58",
+      "typeDe": "Walzer",
+      "typeEng": "Waltz"
+    },
+    {
+      "nameDe": "Slowfox",
+      "nameEng": "Slow Foxtrot",
+      "meter": "4/4",
+      "bpm": "60-100",
+      "mpm": "15-25",
+      "typeDe": "Foxtrott",
+      "typeEng": "Foxtrot"
+    },
+    {
+      "nameDe": "Foxtrott",
+      "nameEng": "Castle Foxtrot",
+      "meter": "4/4",
+      "bpm": "112-136",
+      "mpm": "28-34",
+      "typeDe": "Foxtrott",
+      "typeEng": "Foxtrot"
+    },
+    {
+      "nameDe": "Quickstep",
+      "nameEng": "Quickstep",
+      "meter": "4/4",
+      "bpm": "192-208",
+      "mpm": "48-52",
+      "typeDe": "Foxtrott",
+      "typeEng": "Foxtrot"
+    },
+    {
+      "nameDe": "Disco Fox",
+      "nameEng": "Disco Fox",
+      "meter": "4/4",
+      "bpm": "112-120",
+      "mpm": "28-30",
+      "typeDe": "Swing",
+      "typeEng": "Swing"
+    },
+    {
+      "nameDe": "Salsa",
+      "nameEng": "Salsa",
+      "meter": "4/4",
+      "bpm": "160-220",
+      "mpm": "40-55",
+      "typeDe": "Latein",
+      "typeEng": "Latin"
+    },
+    {
+      "nameDe": "Merengue",
+      "nameEng": "Merengue",
+      "meter": "2/4",
+      "bpm": "58-64",
+      "mpm": "29-32",
+      "typeDe": "Latein",
+      "typeEng": "Latin"
+    },
+    {
+      "nameDe": "Boogie Woogie",
+      "nameEng": "Boogie Woogie",
+      "meter": "4/4",
+      "bpm": "128-208",
+      "mpm": "32-52",
+      "typeDe": "Swing",
+      "typeEng": "Swing"
+    },
+    {
+      "nameDe": "Rock 'n' Roll",
+      "nameEng": "Rock 'n' Roll",
+      "meter": "4/4",
+      "bpm": "184-208",
+      "mpm": "46-52",
+      "typeDe": "Swing",
+      "typeEng": "Swing"
+    },
+    {
+      "nameDe": "Bachata",
+      "nameEng": "Bachata",
+      "meter": "4/4",
+      "bpm": "108-152",
+      "mpm": "27-38",
+      "typeDe": "Latein",
+      "typeEng": "Latin"
+    },
+    {
+      "nameDe": "Lambada",
+      "nameEng": "Lambada",
+      "meter": "4/4",
+      "bpm": "120-186",
+      "mpm": "45-50",
+      "typeDe": "Latein",
+      "typeEng": "Latin"
+    },
+    {
+      "nameDe": "West Coast Swing",
+      "nameEng": "West Coast Swing",
+      "meter": "4/4",
+      "bpm": "112-128",
+      "mpm": "28-32",
+      "typeDe": "Swing",
+      "typeEng": "Swing"
+    }
+  ]
+}

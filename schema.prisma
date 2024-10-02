@@ -1,0 +1,190 @@
+generator client {
+  provider             = "prisma-client-py"
+  recursive_type_depth = 5
+}
+
+datasource db {
+  provider = "mysql"
+  url      = "mysql://webdev:Wd24PDB!@localhost:3306/dancemusic"
+}
+
+model Keys {
+  id         Int      @id @default(autoincrement())
+  key        String   @unique
+  service    String
+  expireDate DateTime
+
+  @@map("keys")
+}
+
+model User {
+  id             Int     @id @default(autoincrement())
+  username       String  @unique
+  logging        Boolean @default(true)
+  recommend      Boolean @default(true)
+  recordDuration Int     @default(8)
+  language       String
+
+  logEntries   LogEntry[]
+  songScores   SongScore[]
+  danceScores  DanceScore[]
+  personalRecs PersonalRecommendation[]
+
+  @@map("users")
+}
+
+model Artist {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  songs Song[]
+
+  @@map("artists")
+}
+
+model Song {
+  id            Int     @id @default(autoincrement())
+  title         String
+  image         String
+  artist        Artist  @relation(fields: [artistId], references: [id])
+  artistId      Int     @map("artist_id")
+  avgScore      Int     @default(0)
+  votes         Int     @default(0)
+  checked       Boolean
+  appleMusicUrl String
+  spotifyUrl    String
+  shazam        Boolean @default(true)
+
+  danceSongs      DanceSong[]
+  logEntries      LogEntry[]
+  charts          Chart[]
+  recommendations StandardRecommendation[]
+  songScores      SongScore[]
+  personalRecs    PersonalRecommendation[]
+  songTags        SongTag[]
+
+  @@map("songs")
+}
+
+model Dance {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  meter String
+  bpm   String
+  mpm   String
+  type  String
+
+  danceSongs      DanceSong[]
+  danceScores     DanceScore[]
+  recommendations StandardRecommendation[]
+  personalRecs    PersonalRecommendation[]
+
+  @@map("dances")
+}
+
+model DanceSong {
+  id        Int    @id @default(autoincrement())
+  songId    Int
+  song      Song   @relation(fields: [songId], references: [id])
+  danceName String @map("dance_name")
+  dance     Dance  @relation(fields: [danceName], references: [name])
+  rating    Int
+
+  @@map("dancesongs")
+}
+
+model SongScore {
+  id       Int    @id @default(autoincrement())
+  songId   Int    @map("song_id")
+  song     Song   @relation(fields: [songId], references: [id])
+  username String @map("username")
+  user     User   @relation(fields: [username], references: [username])
+  score    Int
+
+  @@map("songscores")
+}
+
+model DanceScore {
+  id        Int    @id @default(autoincrement())
+  danceName String @map("dance_name")
+  dance     Dance  @relation(fields: [danceName], references: [name])
+  username  String @map("username")
+  user      User   @relation(fields: [username], references: [username])
+  avgRating Float
+
+  @@map("dancescores")
+}
+
+model LogEntry {
+  id       Int      @id @default(autoincrement())
+  username String   @map("username")
+  user     User     @relation(fields: [username], references: [username])
+  time     DateTime @default(now())
+  songId   Int      @map("song_id")
+  song     Song     @relation(fields: [songId], references: [id])
+
+  @@map("logentries")
+}
+
+model Tag {
+  id     Int    @id @default(autoincrement())
+  tag    String @unique
+  season String
+
+  recommendations StandardRecommendation[]
+  personalRecs    PersonalRecommendation[]
+  songTags        SongTag[]
+
+  @@map("tags")
+}
+
+model SongTag {
+  id      Int    @id @default(autoincrement())
+  tagName String @map("tag")
+  tag     Tag    @relation(fields: [tagName], references: [tag])
+  songId  Int    @map("song_id")
+  song    Song   @relation(fields: [songId], references: [id])
+
+  @@map("songtags")
+}
+
+model Chart {
+  id         Int   @id @default(autoincrement())
+  year       Int
+  month      Int
+  songId     Int   @map("song_id")
+  song       Song  @relation(fields: [songId], references: [id])
+  placement  Int
+
+  @@map("charts")
+}
+
+model StandardRecommendation {
+  id        Int     @id @default(autoincrement())
+  year      Int
+  week      Int
+  categoryD String? @map("dance_name")
+  catDance  Dance?  @relation(fields: [categoryD], references: [name])
+  categoryT String? @map("tag")
+  catTag    Tag?    @relation(fields: [categoryT], references: [tag])
+  songId    Int     @map("song_id")
+  song      Song    @relation(fields: [songId], references: [id])
+
+  @@map("standard_recommendations")
+}
+
+model PersonalRecommendation {
+  id        Int     @id @default(autoincrement())
+  year      Int
+  week      Int
+  categoryD String? @map("dance_name")
+  catDance  Dance?  @relation(fields: [categoryD], references: [name])
+  categoryT String? @map("tag")
+  catTag    Tag?    @relation(fields: [categoryT], references: [tag])
+  songId    Int     @map("song_id")
+  song      Song    @relation(fields: [songId], references: [id])
+  username  String  @map("username")
+  user      User    @relation(fields: [username], references: [username])
+
+  @@map("recommendations")
+}

@@ -121,7 +121,7 @@ def GetDances(artist, title):
         content = page.content
 
     else:
-    	return "Error1", "Webseite nicht erreichbar", [page.status_code]
+        return "Error1", "Webseite nicht erreichbar", [page.status_code]
 
     WebDocument = BeautifulSoup(content, 'html.parser')
 
@@ -161,8 +161,8 @@ async def recognize_song():
     out = await shazam.recognize_song(filename)
 
     try:
-    	information = [out['track']['title'], out['track']['subtitle']]
-    	return information
+        information = [out['track']['title'], out['track']['subtitle']]
+        return information
 
     except KeyError:
     	return []
