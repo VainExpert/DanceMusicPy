@@ -130,6 +130,7 @@ model Tag {
   id     Int    @id @default(autoincrement())
   tag    String @unique
   season String
+  type   String @default("Seasonal")
 
   recommendations StandardRecommendation[]
   personalRecs    PersonalRecommendation[]

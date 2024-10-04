@@ -722,10 +722,101 @@ async def get_recs():
     
     new_rec['week'] = recommendation['month'] * 4
     new_rec['year'] = recommendation['year']
-
     
- 
-  
+    all_types = []
+    length = 3
+    while len(recommendation['categories']) < length:
+      types = []
+      
+      for category in recommendation['categories']:
+        get_dance = await prisma.dance.find_first(
+          data = {
+            'where': {
+              'name': category['cat']
+            }
+          }
+        )
+        types.append(get_dance.type)
+
+      get_tags = await prisma.tag.find_many()
+      all_seasons = []
+
+      for tag in get_tags:
+        seasons = tag.season.split("-")
+        for season in seasons:
+          all_seasons.append(season)
+
+      while len(types) < length:
+        for type in all_types:
+          if type not in types:
+            
+            if type == "Seasonal":
+              date = datetime.now()
+              for season in all_seasons:
+                if int(season) == date.month:
+                  length += 1
+                  types.append(type)
+                  cat = {'cat': tag, 'songs': []}
+                  recommendation['categories'].append(cat)
+
+            get_new_dances = await prisma.dance.find_many(
+              data = {
+                'where': {
+                  'type': type
+                }
+              }
+            )
+            types.append(type)
+            
+            random_num = random.randint(0, len(get_new_dances))
+            new_dance = get_new_dances[random_num]
+            
+            cat = {'cat': new_dance.name , 'songs': []}
+            recommendation['categories'].append(cat)
+
+    new_rec['categories'] = recommendation['categories']
+      
+    for category in new_rec['categories']:
+
+      if category in tag_list:
+        get_songs = await prisma.songtag.find_many(
+          data = {
+            'where': {
+              'danceName': category
+            },
+            'include': {
+              'songs': {
+                'artist': True
+              }
+            }
+          }
+        )
+
+      else:
+        get_songs = await prisma.dancesong.find_many(
+          data = {
+            'where': {
+              'tagName': category
+            },
+            'include': {
+              'songs': {
+                'artist': True
+              }
+            }
+          }
+        )
+
+      while len(category['songs']) < 2:
+        
+        random_num = random.randint(0, len(get_songs.songs))
+        song = {}
+
+        song['title'] = get_songs.songs[random_num].title
+        song['artist'] = get_songs.songs[random_num].artist.name
+
+        if song not in category['songs']:
+          category['songs'].append(song)
+
   for recommendation in new_recs:
     print("------")
     print("Recommendation:")
