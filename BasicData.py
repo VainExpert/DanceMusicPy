@@ -149,6 +149,9 @@ async def get_shazam_tracks(song_data):
         current_track['image'] = track['images']['coverart']
       else:
         current_track['image'] = ""
+
+      #Add Release Date from Shazam Data
+      current_track['release'] = None
       
       return_tracks.append(current_track)
 
@@ -301,12 +304,14 @@ async def get_songs():
       song_data['shazam'] = False
       song_data['apple_url'] = ""
       song_data['image'] = ""
+      song_data['release'] = None
       if result:
         for res_song in result:
           if song_data['artist'].lower() == res_song['subtitle'].lower() and song_data['song_title'].lower() == res_song['title'].lower():
             song_data['shazam'] = True
             song_data['apple_url'] = res_song['apple_url']
             song_data['image'] = res_song['image']
+            song_data['release'] = res_song['release']
             
             break
 
@@ -336,6 +341,7 @@ async def get_songs():
       print("------")
       print(f"Song: {song['song_title']} ({song['song_url']})")
       print(f"Künstler: {song['artist']}")
+      print(f"Release: {song['release']}")
       print(f"Bild: {song['image']}")
       print(f"Geprüft: {song['expert_checked']}")
       for dance in song['dances']:
@@ -360,6 +366,7 @@ async def get_songs():
                 'id': a_artist.id,
               }
             },
+            'release': song['release'],
             'checked': song['expert_checked'],
             'appleMusicUrl': song['apple_url'],
             'spotifyUrl': song['spotify_url'],
@@ -527,6 +534,7 @@ async def get_charts():
       artist_tag = song_row.find('span', class_='artist').find('a')
       song_data['artist'] = artist_tag.get_text() if artist_tag else None
 
+      #Get Score and Votes from Website -> ChatGPT
       song_data['score'] = 0
 
       song_data['votes'] = 0
@@ -593,7 +601,7 @@ async def get_charts():
 
       song['chart_score'] = chart_score
 
-    #Sort songs with chart_score, new_placement and prev_position
+    #Sort songs with chart_score, new_placement and prev_position -> ChatGPT
     songs = []
 
     new_chart['songs'] = songs
@@ -816,6 +824,9 @@ async def get_recs():
 
         if song not in category['songs']:
           category['songs'].append(song)
+
+    #Extrapolate Recommendations to every week with release date of songs and the current week and year to be added -> ask ChatGPT for advice
+    
 
   for recommendation in new_recs:
     print("------")

@@ -43,17 +43,18 @@ model Artist {
 }
 
 model Song {
-  id            Int     @id @default(autoincrement())
+  id            Int       @id @default(autoincrement())
   title         String
   image         String
-  artist        Artist  @relation(fields: [artistId], references: [id])
-  artistId      Int     @map("artist_id")
-  avgScore      Int     @default(0)
-  votes         Int     @default(0)
+  artist        Artist    @relation(fields: [artistId], references: [id])
+  artistId      Int       @map("artist_id")
+  release       DateTime
+  avgScore      Int       @default(0)
+  votes         Int       @default(0)
   checked       Boolean
   appleMusicUrl String
   spotifyUrl    String
-  shazam        Boolean @default(true)
+  shazam        Boolean   @default(true)
 
   danceSongs      DanceSong[]
   logEntries      LogEntry[]
