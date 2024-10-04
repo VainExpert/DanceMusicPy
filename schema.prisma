@@ -155,6 +155,7 @@ model Chart {
   songId     Int   @map("song_id")
   song       Song  @relation(fields: [songId], references: [id])
   placement  Int
+  change     Int
 
   @@map("charts")
 }

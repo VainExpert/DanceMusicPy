@@ -213,9 +213,6 @@ async def get_dances():
 
 async def get_tags():
 
-  tag_list = ["Weihnachten", "Halloween", "Ostern", "Hochzeit"]
-  season_list = ["11-12", "10", "4", "5-6"]
-
   for i in range(len(tag_list)):
     create_tag = await prisma.tag.create(
       data = {
@@ -496,12 +493,17 @@ async def get_charts():
   all_charts = []
 
   while year != end_year and week != end_week:
+
+    chart = {}
     
     if week < 10:
       temp_week = f"0${week}"
       date = f"${year}${temp_week}"
     else:
       date = f"${year}${week}" 
+
+    chart['week'] = week
+    chart['year'] = year
     
     chart_url = f"https://www.tanzmusik-online.de/charts/${date}"
 
@@ -518,22 +520,24 @@ async def get_charts():
 
     for song_row in soup.find_all('div', class_='row songRow visibleTrigger'):
       
-      chart_data = {}
-
-      chart_data['week'] = week
-      chart_data['year'] = year
+      song_data = {}
 
       title_tag = song_row.find('div', class_='songTitle').find('a')
-      chart_data['title'] = title_tag.get_text() if title_tag else None
+      song_data['title'] = title_tag.get_text() if title_tag else None
       artist_tag = song_row.find('span', class_='artist').find('a')
-      chart_data['artist'] = artist_tag.get_text() if artist_tag else None
+      song_data['artist'] = artist_tag.get_text() if artist_tag else None
 
-      # Aktuelle Position
-      current_position = song_row.find('div', class_='position')
-      if current_position:
-        chart_data['chart_position'] = int(current_position.get_text())
+      song_data['score'] = 0
 
-      chart_songs.append(chart_data)
+      song_data['votes'] = 0
+
+      song_data['chart_score'] = 0
+
+      chart_songs.append(song_data)
+    
+    chart['songs'] = chart_songs
+
+    all_charts.append(chart)
 
     if week+1 > 52:
       week = 1
@@ -541,46 +545,117 @@ async def get_charts():
     else:
       week += 1
   
-    for chart in chart_songs:
+  true_charts = []
+
+  for i in range(0, len(all_charts), 4):
+
+    chart = all_charts[i]
+    
+    new_chart = {}
+    month = int(chart['week'] / 4)
+    new_chart['month'] = month
+    new_chart['year'] = chart['year']
+
+    for song in chart['songs']:
+      get_artist = await prisma.artist.find_first(
+        daat = {
+          'where': {
+            'name': song['artist']
+          }
+        }
+      )
+
+      get_song = await prisma.song.find_first(
+        data = {
+          'where': {
+            'title': song['title'],
+            'artist': get_artist.id
+          }
+        }
+      )
+
+      get_dances = await prisma.dancesong.find_many(
+        data = {
+          'where': {
+            'songId': get_song.id
+          }
+        }
+      )
+
+      chart_score = 0
+      dance_score = 0
+      for dance in get_dances:
+        dance_score += dance.rating
+
+      dance_score = dance_score / len(get_dances)
+
+      chart_score = song['score'] * song['votes'] / dance_score
+
+      song['chart_score'] = chart_score
+
+    #Sort songs with chart_score, new_placement and prev_position
+    songs = []
+
+    new_chart['songs'] = songs
+    true_charts.append(new_chart)
+
+  if len(true_charts) != 56:
+    print(f"Fail! Nicht jeder oder zu viele Monate gemappt. {len(true_charts)}")
+  else:
+    for chart in true_charts:
       print("------")
       print("Chart:")
-      print(f"Woche: {chart['week']}")
+      print(f"Monat: {chart['month']}")
       print(f"Jahr: {chart['year']}")
-      print(f"Song: {chart['title']}")
-      print(f"Künstler: {chart['artist']}")
-      print(f"Position: {chart['chart_position']}")
-      
-      db_song = await prisma.song.find_first(
-          where = {
-            'title': chart['title'],
-            'artist': chart['artist']
+      for song in chart['songs']:
+        print(f"Song: {song['title']}")
+        print(f"Künstler: {song['artist']}")
+        print(f"Position: {song['chart_position']}")
+        print(f"Veränderung: {song['change']}")
+
+        db_artist = await prisma.artist.find_first(
+          data = {
+            'where': {
+              'name': song['artist']
+            }
           }
         )
 
+        db_song = await prisma.song.find_first(
+          data = {
+            'where': {
+              'title': song['title'],
+              'artist': db_artist.id
+            }
+          }
+        )
 
+        create_chart = await prisma.chart.create(
+          data = {
+              'year': chart['year'],
+              'month': chart['month'],
+              'song': {
+                'connect': {
+                  'id': db_song.id
+                }
+              },
+              'placement': song['chart_position'],
+              'change': song['change']
+          }
+        )
 
       print("------")
 
-    create_chart = await prisma.chart.create(
-         data = {
-            'year': chart['year'],
-            'month': int(chart['week'] / 4),
-            'song': {
-              'connect': {
-                'id': db_song.id
-              }
-            },
-            'placement': chart['chart_position']
-         }
-      )
-    print("Successfully added Chart")
+      print("Successfully added Chart")
 
 async def get_recs(): 
   
   year = 2020
   month = 3
   end_year = 2024
-  end_month = 9
+  end_month = 10
+
+  all_recs = []
 
   while year != end_year and month != end_month:
 
@@ -589,6 +664,10 @@ async def get_recs():
       date = f"${year}-${temp_month}"
     else:
       date = f"${year}-${month}"
+
+    recommendation = {}
+    recommendation['month'] = month
+    recommendation['year'] = year
       
     rec_url = f"https://www.tanzmusik-online.de/recommendation/${date}"
 
@@ -603,68 +682,32 @@ async def get_recs():
 
     dance_categories = soup.find_all('h2')
 
-    recommendations = []
+    categories = []
 
     # Durch jede Tanzkategorie und zugehörige Songs iterieren
     for dance_category in dance_categories:
 
-      rec_data = {}
-      
-      rec_data['month'] = month
-      rec_data['year'] = year
-      rec_data['category_name'] = dance_category.get_text()
+      cat_data = {}
+      cat_data['cat'] = dance_category.get_text()
                 
       # Suche nach den Songs unter der jeweiligen Kategorie
       song_rows = dance_category.find_next_sibling('div', class_='songlist').find_all('div', class_='songRow')
 
-      rec_data['songs'] = []
-          
+      cat_data['songs'] = []
+
       for row in song_rows:
         # Titel und Künstler extrahieren
         s_data = {}
         s_data['title'] = row.find('div', class_='songTitle').get_text()
         s_data['artist'] = row.find('span', class_='artist').get_text()
 
-        rec_data['songs'].append(s_data)
+        cat_data['songs'].append(s_data)
 
-      recommendations.append(rec_data)
-
-    for recommendation in recommendations:
-      print("------")
-      print("Recommendation:")
-      print(f"Monat: {recommendation['month']}")
-      print(f"Jahr: {recommendation['year']}")
-      print(f"Kategorie: {recommendation['category']}")
-      for song in recommendation['songs']:
-        print(f"Song: {song['title']}")
-        print(f"Künstler: {song['artist']}")
-      print("------")
-
-      for song in recommendation['songs']:
-        db_song = await prisma.song.find_first(
-          where = {
-            'title': song['title'],
-            'artist': song['artist']
-          }
-        )
-
-        create_rec = await prisma.recommendation.create(
-          data = {
-            'year': recommendation['year'],
-            'month': recommendation['month'],
-            'catDance': {
-              'connect': {
-                'name': recommendation['category']
-              }
-            },
-            'song': {
-              'connect': {
-                'id': db_song.id
-              }
-            }
-          }
-        )
-        print("Successfully added Recommendation")
+      categories.append(cat_data)
+    
+    recommendation['categories'] = categories
+    
+    all_recs.append(recommendation)
 
     if month+1 > 12:
       month = 1
@@ -672,8 +715,92 @@ async def get_recs():
     else:
       month += 1
 
+  new_recs = []
+  for recommendation in all_recs:
+    
+    new_rec = {}
+    
+    new_rec['week'] = recommendation['month'] * 4
+    new_rec['year'] = recommendation['year']
+
+    
+ 
+  
+  for recommendation in new_recs:
+    print("------")
+    print("Recommendation:")
+    print(f"Woche: {recommendation['week']}")
+    print(f"Jahr: {recommendation['year']}")
+    for category in recommendation['categories']:
+      print(f"Kategorie: {category['cat']}")
+      for song in category['songs']:
+        print(f"Song: {song['title']}")
+        print(f"Künstler: {song['artist']}")
+    print("------")
+
+    for category in recommendation['categories']:
+      for song in category['songs']:
+        db_artist = await prisma.artist.find_first(
+            data = {
+              'where': {
+                'name': song['artist']
+              }
+            }
+          )
+
+        db_song = await prisma.song.find_first(
+          where = {
+            'title': song['title'],
+            'artist': {
+              'connect': {
+                'id': db_artist.id
+              }
+            }
+          }
+        )
+
+        if category['cat'] in tag_list:
+          create_rec = await prisma.recommendation.create(
+            data = {
+              'year': recommendation['year'],
+              'week': recommendation['week'],
+              'catTag': {
+                'connect': {
+                  'name': category['cat']
+                }
+              },
+              'song': {
+                'connect': {
+                  'id': db_song.id
+                }
+              }
+            }
+          )
+
+        else:
+          create_rec = await prisma.recommendation.create(
+            data = {
+              'year': recommendation['year'],
+              'week': recommendation['week'],
+              'catDance': {
+                'connect': {
+                  'name': category['cat']
+                }
+              },
+              'song': {
+                'connect': {
+                  'id': db_song.id
+                }
+              }
+            }
+          )
+        print("Successfully added Recommendation")
+
 prisma = Prisma()
 shazam = Shazam()
+
+tag_list = ["Weihnachten", "Halloween", "Ostern", "Hochzeit"]
+season_list = ["11-12", "10", "4", "5-6"]
 
 async def main():
 
