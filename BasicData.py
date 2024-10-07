@@ -10,7 +10,7 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import logging
 import logging.config
-from datetime import datetime
+from datetime import datetime, timedelta
 
 today = datetime.today().strftime('%Y-%m-%d')
 log_file = "./log/web_scraper-{}.log".format(today)
@@ -149,9 +149,6 @@ async def get_shazam_tracks(song_data):
         current_track['image'] = track['images']['coverart']
       else:
         current_track['image'] = ""
-
-      #Add Release Date from Shazam Data
-      current_track['release'] = None
       
       return_tracks.append(current_track)
 
@@ -180,12 +177,15 @@ async def get_spotify_tracks(song_data):
       image_url = track['album']['images'][0]['url']
     else:
       image_url = ""
+
+    release = track['album']['release_date']
     
     track_info = {
       "title": track_name,
       "spotify_url": track_url,
       "artists": artist_names,
-      "image": image_url
+      "image": image_url,
+      "release": release
     }
 
     print(track_info)
@@ -193,6 +193,95 @@ async def get_spotify_tracks(song_data):
     track_info_list.append(track_info)
 
   return track_info_list
+
+def add_previous_placement(charts_data):
+  # Iterate over the charts, comparing each with its previous one
+  for i in range(1, len(charts_data)):
+      current_chart = charts_data[i]
+      previous_chart = charts_data[i - 1]
+
+      # Create a lookup dictionary for quick access to previous placements by song title
+      previous_placements = {song['title']: song['chart_position'] for song in previous_chart['songs']}
+
+      # Add 'previous_placement' for each song in the current chart
+      for song in current_chart['songs']:
+          song_title = song['title']
+          # If the song exists in the previous chart, get its placement, otherwise set to -1
+          song['previous_position'] = previous_placements.get(song_title, -1)
+
+  return charts_data
+
+async def get_cat_songs(categories, date):
+
+  for category in categories:
+    if category['cat'] in tag_list:
+      get_songs = await prisma.songtag.find_many(
+        data = {
+          'where': {
+            'danceName': category,
+            'release': {
+              'lte': date
+            }
+          },
+          'include': {
+            'song': {
+              'include': {
+                'artist': True
+              }
+            }
+          }
+        }
+      )
+
+    else:
+      get_songs = await prisma.dancesong.find_many(
+        data = {
+          'where': {
+            'tagName': category,
+            'release': {
+              'lte': date
+            }
+          },
+          'include': {
+            'song': {
+              'include': {
+                'artist': True
+              }
+            }
+          }
+        }
+      )
+      
+      while len(category['songs']) < 2:
+        random_s = random.choice(get_songs.songs)
+        song = {}
+
+        song['title'] = random_s.title
+        song['artist'] = random_s.artist.name
+
+        if song not in category['songs']:
+          category['songs'].append(song)
+      
+    return categories
+
+async def get_tag_cat(rec, types, date, length):
+  
+  get_tags = await prisma.tag.find_many()
+
+  for tag in get_tags:
+    seasons = tag.season.split("-")
+    for season in seasons:
+      if int(season) == date.month:
+        length += 1
+        types.append('Seasonal')
+        
+        cat = {'cat': tag, 'songs': []}
+        rec['categories'].append(cat)
+    
+    if length == 4:
+      break
+  
+  return [rec, types, length]
 
 async def get_dances():
 
@@ -304,7 +393,6 @@ async def get_songs():
       song_data['shazam'] = False
       song_data['apple_url'] = ""
       song_data['image'] = ""
-      song_data['release'] = None
       if result:
         for res_song in result:
           if song_data['artist'].lower() == res_song['subtitle'].lower() and song_data['song_title'].lower() == res_song['title'].lower():
@@ -318,6 +406,7 @@ async def get_songs():
       result = await get_spotify_tracks(song_data)
 
       song_data['spotify_url'] = ""
+      song_data['release'] = None
       if result:
         for res_song in result:
           if song_data['song_title'].lower() == res_song['title'].lower():
@@ -534,10 +623,8 @@ async def get_charts():
       artist_tag = song_row.find('span', class_='artist').find('a')
       song_data['artist'] = artist_tag.get_text() if artist_tag else None
 
-      #Get Score and Votes from Website -> ChatGPT
-      song_data['score'] = 0
-
-      song_data['votes'] = 0
+      song_data['score'] = int(song_row.find('div', class_='ratyBar')['data-initial-score'])
+      song_data['votes'] = int(song_row.find('div', class_='votesText').find('span', class_='number').text.strip())
 
       song_data['chart_score'] = 0
 
@@ -601,11 +688,13 @@ async def get_charts():
 
       song['chart_score'] = chart_score
 
-    #Sort songs with chart_score, new_placement and prev_position -> ChatGPT
+    #TODO: Sort songs with chart_score, new_placement
     songs = []
 
     new_chart['songs'] = songs
     true_charts.append(new_chart)
+
+  true_charts = add_previous_placement(true_charts)
 
   if len(true_charts) != 56:
     print(f"Fail! Nicht jeder oder zu viele Monate gemappt. {len(true_charts)}")
@@ -619,7 +708,7 @@ async def get_charts():
         print(f"Song: {song['title']}")
         print(f"Künstler: {song['artist']}")
         print(f"Position: {song['chart_position']}")
-        print(f"Veränderung: {song['change']}")
+        print(f"Vorherige: {song['previous_position']}")
 
         db_artist = await prisma.artist.find_first(
           data = {
@@ -648,7 +737,7 @@ async def get_charts():
                 }
               },
               'placement': song['chart_position'],
-              'change': song['change']
+              'previous': song['previous_position']
           }
         )
 
@@ -656,7 +745,7 @@ async def get_charts():
 
       print("Successfully added Chart")
 
-async def get_recs(): 
+async def get_recs():
   
   year = 2020
   month = 3
@@ -723,15 +812,16 @@ async def get_recs():
     else:
       month += 1
 
+  date = datetime(2020, 3, 2)
   new_recs = []
   for recommendation in all_recs:
     
     new_rec = {}
     
-    new_rec['week'] = recommendation['month'] * 4
-    new_rec['year'] = recommendation['year']
+    new_rec['week'] = date.isocalendar()[1]
+    new_rec['year'] = date.year
     
-    all_types = []
+    all_types = ["Latein", "Walzer", "Swing", "Tango", "Foxtrott"]
     length = 3
     while len(recommendation['categories']) < length:
       types = []
@@ -746,87 +836,69 @@ async def get_recs():
         )
         types.append(get_dance.type)
 
-      get_tags = await prisma.tag.find_many()
-      all_seasons = []
+      results = await get_tag_cat(recommendation, types, date, length)
+      recommendation = results[0]
+      types = results[1]
+      length = results[2]
 
-      for tag in get_tags:
-        seasons = tag.season.split("-")
-        for season in seasons:
-          all_seasons.append(season)
-
-      while len(types) < length:
-        for type in all_types:
-          if type not in types:
-            
-            if type == "Seasonal":
-              date = datetime.now()
-              for season in all_seasons:
-                if int(season) == date.month:
-                  length += 1
-                  types.append(type)
-                  cat = {'cat': tag, 'songs': []}
-                  recommendation['categories'].append(cat)
-
-            get_new_dances = await prisma.dance.find_many(
-              data = {
-                'where': {
-                  'type': type
-                }
-              }
-            )
-            types.append(type)
-            
-            random_num = random.randint(0, len(get_new_dances))
-            new_dance = get_new_dances[random_num]
-            
-            cat = {'cat': new_dance.name , 'songs': []}
-            recommendation['categories'].append(cat)
-
-    new_rec['categories'] = recommendation['categories']
-      
-    for category in new_rec['categories']:
-
-      if category in tag_list:
-        get_songs = await prisma.songtag.find_many(
-          data = {
-            'where': {
-              'danceName': category
-            },
-            'include': {
-              'songs': {
-                'artist': True
+      for type in all_types:
+        if type not in types:
+          get_new_dances = await prisma.dance.find_many(
+            data = {
+              'where': {
+                'type': type
               }
             }
-          }
-        )
+          )
+          types.append(type)
+          
+          new_dance = random.choice(get_new_dances)
+          
+          cat = {'cat': new_dance.name , 'songs': []}
+          recommendation['categories'].append(cat)
 
-      else:
-        get_songs = await prisma.dancesong.find_many(
-          data = {
-            'where': {
-              'tagName': category
-            },
-            'include': {
-              'songs': {
-                'artist': True
-              }
-            }
-          }
-        )
+    categories = get_cat_songs(recommendation['categories'], date) 
+    new_rec['categories'] = categories
 
-      while len(category['songs']) < 2:
-        
-        random_num = random.randint(0, len(get_songs.songs))
-        song = {}
-
-        song['title'] = get_songs.songs[random_num].title
-        song['artist'] = get_songs.songs[random_num].artist.name
-
-        if song not in category['songs']:
-          category['songs'].append(song)
-
-    #Extrapolate Recommendations to every week with release date of songs and the current week and year to be added -> ask ChatGPT for advice
+    new_recs.append(new_rec)
     
+    for _ in range(3):
+      
+      new_rec = {}
+      date = date + timedelta(days=7)
+
+      new_rec['week'] = date.isocalendar()[1]
+      new_rec['year'] = date.year
+
+      new_rec['categories'] = []
+
+      length = 3
+
+      results = await get_tag_cat(new_rec, types, date, length)
+      new_rec = results[0]
+      types = results[1]
+      length = results[2]
+
+      while len(new_rec['categories']) < length:
+        types = random.sample(all_types, 3)
+        
+        for type in types:
+          get_new_dances = await prisma.dance.find_many(
+            data = {
+              'where': {
+                'type': type
+              }
+            }
+          )
+          cat = {'cat': random.choice(get_new_dances), 'songs': []}
+          new_rec['categories'].append(cat)
+      
+      categories = await get_cat_songs(new_rec['categories'], date)
+      new_rec['categories'] = categories
+
+      new_recs.append(new_rec)
+
+    date = date + timedelta(days=7)
 
   for recommendation in new_recs:
     print("------")
