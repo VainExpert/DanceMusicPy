@@ -25,10 +25,9 @@ model User {
   recordDuration Int     @default(8)
   language       String
 
-  logEntries   LogEntry[]
-  songScores   SongScore[]
-  danceScores  DanceScore[]
-  personalRecs PersonalRecommendation[]
+  logEntries      LogEntry[]
+  danceScores     DanceScore[]
+  recommendations Recommendation[]
 
   @@map("users")
 }
@@ -45,23 +44,21 @@ model Artist {
 model Song {
   id            Int       @id @default(autoincrement())
   title         String
-  image         String
+  image         String    @db.Text
   artist        Artist    @relation(fields: [artistId], references: [id])
   artistId      Int       @map("artist_id")
-  release       DateTime
+  release       DateTime?
   avgScore      Int       @default(0)
   votes         Int       @default(0)
   checked       Boolean
-  appleMusicUrl String
-  spotifyUrl    String
+  appleMusicUrl String    @db.Text
+  spotifyUrl    String    @db.Text
   shazam        Boolean   @default(true)
 
   danceSongs      DanceSong[]
   logEntries      LogEntry[]
   charts          Chart[]
-  recommendations StandardRecommendation[]
-  songScores      SongScore[]
-  personalRecs    PersonalRecommendation[]
+  recommendations Recommendation[]
   songTags        SongTag[]
 
   @@map("songs")
@@ -77,8 +74,7 @@ model Dance {
 
   danceSongs      DanceSong[]
   danceScores     DanceScore[]
-  recommendations StandardRecommendation[]
-  personalRecs    PersonalRecommendation[]
+  recommendations Recommendation[]
 
   @@map("dances")
 }
@@ -92,17 +88,6 @@ model DanceSong {
   rating    Int
 
   @@map("dancesongs")
-}
-
-model SongScore {
-  id       Int    @id @default(autoincrement())
-  songId   Int    @map("song_id")
-  song     Song   @relation(fields: [songId], references: [id])
-  username String @map("username")
-  user     User   @relation(fields: [username], references: [username])
-  score    Int
-
-  @@map("songscores")
 }
 
 model DanceScore {
@@ -133,8 +118,7 @@ model Tag {
   season String
   type   String @default("Seasonal")
 
-  recommendations StandardRecommendation[]
-  personalRecs    PersonalRecommendation[]
+  recommendations Recommendation[]
   songTags        SongTag[]
 
   @@map("tags")
@@ -151,18 +135,18 @@ model SongTag {
 }
 
 model Chart {
-  id         Int   @id @default(autoincrement())
-  year       Int
-  month      Int
-  songId     Int   @map("song_id")
-  song       Song  @relation(fields: [songId], references: [id])
-  placement  Int
-  previous   Int
+  id        Int  @id @default(autoincrement())
+  year      Int
+  month     Int
+  songId    Int  @map("song_id")
+  song      Song @relation(fields: [songId], references: [id])
+  placement Int
+  previous  Int
 
   @@map("charts")
 }
 
-model StandardRecommendation {
+model Recommendation {
   id        Int     @id @default(autoincrement())
   year      Int
   week      Int
@@ -172,22 +156,8 @@ model StandardRecommendation {
   catTag    Tag?    @relation(fields: [categoryT], references: [tag])
   songId    Int     @map("song_id")
   song      Song    @relation(fields: [songId], references: [id])
-
-  @@map("standard_recommendations")
-}
-
-model PersonalRecommendation {
-  id        Int     @id @default(autoincrement())
-  year      Int
-  week      Int
-  categoryD String? @map("dance_name")
-  catDance  Dance?  @relation(fields: [categoryD], references: [name])
-  categoryT String? @map("tag")
-  catTag    Tag?    @relation(fields: [categoryT], references: [tag])
-  songId    Int     @map("song_id")
-  song      Song    @relation(fields: [songId], references: [id])
-  username  String  @map("username")
-  user      User    @relation(fields: [username], references: [username])
+  username  String? @map("username")
+  user      User?   @relation(fields: [username], references: [username])
 
   @@map("recommendations")
 }

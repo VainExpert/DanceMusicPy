@@ -100,8 +100,8 @@
       "typeEng": "Foxtrot"
     },
     {
-      "nameDe": "Quickstep",
-      "nameEng": "Quickstep",
+      "nameDe": "Quick Step",
+      "nameEng": "Quick Step",
       "meter": "4/4",
       "bpm": "192-208",
       "mpm": "48-52",
@@ -136,8 +136,8 @@
       "typeEng": "Latin"
     },
     {
-      "nameDe": "Boogie Woogie",
-      "nameEng": "Boogie Woogie",
+      "nameDe": "Boogie",
+      "nameEng": "Boogie",
       "meter": "4/4",
       "bpm": "128-208",
       "mpm": "32-52",
@@ -145,8 +145,8 @@
       "typeEng": "Swing"
     },
     {
-      "nameDe": "Rock 'n' Roll",
-      "nameEng": "Rock 'n' Roll",
+      "nameDe": "Rock'n'Roll",
+      "nameEng": "Rock'n'Roll",
       "meter": "4/4",
       "bpm": "184-208",
       "mpm": "46-52",
@@ -179,6 +179,42 @@
       "mpm": "28-32",
       "typeDe": "Swing",
       "typeEng": "Swing"
+    },
+    {
+      "nameDe": "Blues",
+      "nameEng": "Blues",
+      "meter": "4/4",
+      "bpm": "40-100",
+      "mpm": "10-25",
+      "typeDe": "Swing",
+      "typeEng": "Swing"
+    },
+    {
+      "nameDe": "Freestyle",
+      "nameEng": "Freestyle",
+      "meter": "4/4",
+      "bpm": "Egal",
+      "mpm": "Egal",
+      "typeDe": "Anderes",
+      "typeEng": "Other"
+    },
+    {
+      "nameDe": "Swing",
+      "nameEng": "Swing",
+      "meter": "4/4",
+      "bpm": "112-128",
+      "mpm": "20-60",
+      "typeDe": "Swing",
+      "typeEng": "Swing"
+    },
+    {
+      "nameDe": "Soca",
+      "nameEng": "Soca",
+      "meter": "4/4",
+      "bpm": "110-140",
+      "mpm": "20-60",
+      "typeDe": "Latein",
+      "typeEng": "Latin"
     }
   ]
 }
