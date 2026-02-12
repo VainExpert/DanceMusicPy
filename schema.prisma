@@ -23,7 +23,7 @@ model User {
   logging        Boolean @default(true)
   recommend      Boolean @default(true)
   recordDuration Int     @default(8)
-  language       String
+  language       String  @default("de")
 
   logEntries      LogEntry[]
   danceScores     DanceScore[]
@@ -97,6 +97,7 @@ model DanceScore {
   username  String @map("username")
   user      User   @relation(fields: [username], references: [username])
   avgRating Float
+  votes 	  Int
 
   @@map("dancescores")
 }

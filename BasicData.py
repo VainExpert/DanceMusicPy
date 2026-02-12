@@ -8,13 +8,8 @@ import random
 import json
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
-import logging
-import logging.config
 from datetime import datetime, timedelta
 
-today = datetime.today().strftime('%Y-%m-%d')
-log_file = "./log/web_scraper-{}.log".format(today)
-logging.basicConfig(force=True, filename=log_file, filemode="w", level=logging.WARNING, format='[%(asctime)s] - %(levelname)s - %(message)s')
 
 christmas_songs = [
     'Jingle Bells',
@@ -51,7 +46,8 @@ christmas_songs = [
     'Glöckchen',
     'Schnee',
     'Snow',
-    'Bells'
+    'Bells',
+    'Rudolph'
 ]
 
 halloween_songs = [
@@ -83,7 +79,9 @@ halloween_songs = [
     'Ghost',
     'Dracula',
     'Skeleton',
-    'Halloween'
+    'Halloween',
+    'Witch',
+    'Hexe'
 ]
 
 easter_songs = [
@@ -100,7 +98,6 @@ easter_songs = [
     'Hosanna',
     'At the Cross',
     'How Great Thou Art',
-    'Forever',
     'O Praise the Name (Anástasis)',
     'Via Dolorosa',
     'Lead Me to the Cross',
@@ -137,11 +134,13 @@ wedding_songs = [
     'From This Moment On',
     'Love on Top',
     'I Choose You',
-    'Ja',
+    ' Ja ',
     'Dir gehört mein Herz',
     'Liebe ist',
     'Du lässt mich sein, so wie ich bin',
-    'Warum hast du nicht nein gesagt'
+    'Warum hast du nicht nein gesagt',
+    'Hochzeit',
+    'Wedding'
 ]
 
 
@@ -181,8 +180,8 @@ async def get_spotify_tracks(song_data):
                                                       client_secret="05591d3451b345bf89a79f40bfb85d21",
                                                       redirect_uri="https://example.org/callback"))
 
-  title = song_data['song_title'].replace("#", "")
-  artist = song_data['artist'].replace("#", "")
+  title = song_data['song_title'].replace("#", "").replace("%", "")
+  artist = song_data['artist'].replace("#", "").replace("%", "")
   results = spotify.search(f"{artist} {title}", limit=5, type="track")
 
   track_info_list = []
@@ -268,7 +267,7 @@ async def order_songs_by_rank(songs, avg_score=0.0, min_votes=10, alpha=0.6, bet
         get_song = await prisma.song.find_first(
           where = {
             'title': song['title'],
-            'artist': get_artist.id
+            'artistId': get_artist.id
           }
         )
 
@@ -401,7 +400,7 @@ async def get_tags():
     print(f"Successfully added Tag {tag_list[i]}")
   print()
 
-async def get_songs(problems, index, number):
+async def get_songs():
   
   start_url = "https://www.tanzmusik-online.de/music"
 
@@ -416,22 +415,21 @@ async def get_songs(problems, index, number):
   soup = BeautifulSoup(content, 'html.parser')
 
   interpreten_divs = soup.find_all('div', class_='col-lg-3 col-md-4 col-sm-6 col-xs-offset-1 col-xs-12')
-
-  if number == 0:
-    interpreten = [div.find('a').get_text() for div in interpreten_divs if div.find('a')]
-    for interpret in interpreten:
-      create_artist = await prisma.artist.create(
-          data = {
-              'name': interpret
-          }
-        )
-      print(f"Successfully added Artist {interpret}")
-    print()
-
+  """
+  interpreten = [div.find('a').get_text() for div in interpreten_divs if div.find('a')]
+  for interpret in interpreten:
+    create_artist = await prisma.artist.create(
+        data = {
+            'name': interpret
+        }
+      )
+    print(f"Successfully added Artist {interpret}")
+  print() 
+  """
   links = [div.find('a')['href'] for div in interpreten_divs if div.find('a')]
 
   try:
-    for idx in range(index, len(links)):
+    for idx in range(8712, len(links)):
 
       link = links[idx]
       
@@ -444,10 +442,38 @@ async def get_songs(problems, index, number):
       
       soup = BeautifulSoup(content, 'html.parser')
 
+      song_rows = []
+
+      page_idx = 0
+      pages = 1
+        
+      pull_rights = soup.find_all('div', class_='pull-right')
+      for div in pull_rights:
+        if "Seite" in div.get_text():
+          pages = int(div.get_text().split("/")[1])
+          break
+        
+      while page_idx < pages:
+        page_idx += 1
+        page_link = f"{link}?page={page_idx}"
+        
+        new_page = requests.get(page_link)
+        if new_page.status_code == 200:
+          page_content = new_page.content
+        else:
+          break
+
+        page_soup = BeautifulSoup(page_content, 'html.parser')
+
+        temp_song_rows = page_soup.find_all('div', class_='songRow')
+
+        for song_row in temp_song_rows:
+          song_rows.append(song_row)
+
       songs = []
 
       # Suche nach jedem Song-Container
-      for song_row in soup.find_all('div', class_='songRow'):
+      for song_row in song_rows:
         song_data = {}
 
         # Songtitel extrahieren
@@ -472,8 +498,8 @@ async def get_songs(problems, index, number):
                     # Extrahiere die Anzahl der aktiven Sterne
                     active_stars = dance.find_all('i', class_='fa fa-star active')
                     rating = len(active_stars) * 2
-                    if rating < 8 and rating > 2 and not by_hand_checked:
-                      rating = rating + random.randint(-2, 3)
+                    if rating < 8 and rating > 2 and not song_data['expert_checked']:
+                      rating += random.randint(-2, 3)
                     dances.append({'dance': dance_name, 'rating': rating})
 
         song_data['dances'] = dances
@@ -572,60 +598,6 @@ async def get_songs(problems, index, number):
             }
           )
 
-        if song['apple_url'] == "" and not song['shazam'] and song['spotify_url'] == "" and song['image'] == "":
-          problems += 1
-          logging.warning("-------------------------------")
-          logging.warning(f"Song: {song['song_title']} ({song['song_url']})")
-          logging.warning(f"Künstler: {song['artist']}")
-          logging.warning(f"ID: {create_song.id}")
-          logging.warning("Keine Apple URL, nicht auf Shazam, kein Bild und keine Spotify URL")
-          logging.warning("-------------------------------")
-        
-        elif not song['shazam'] and song['apple_url'] == "":
-          problems += 1
-          logging.warning("-------------------------------")
-          logging.warning(f"Song: {song['song_title']} ({song['song_url']})")
-          logging.warning(f"Künstler: {song['artist']}")
-          logging.warning(f"ID: {create_song.id}")
-          logging.warning("Keine Apple URL und nicht auf Shazam")
-          logging.warning("-------------------------------")
-
-        elif not song['shazam'] and song['apple_url'] == "" and song['image'] == "":
-          problems += 1
-          logging.warning("-------------------------------")
-          logging.warning(f"Song: {song['song_title']} ({song['song_url']})")
-          logging.warning(f"Künstler: {song['artist']}")
-          logging.warning(f"ID: {create_song.id}")
-          logging.warning("Keine Apple URL, kein Bild und nicht auf Shazam")
-          logging.warning("-------------------------------")
-        
-        elif song['spotify_url'] == "" and song['image'] == "":
-          problems += 1
-          logging.warning("-------------------------------")
-          logging.warning(f"Song: {song['song_title']} ({song['song_url']})")
-          logging.warning(f"Künstler: {song['artist']}")
-          logging.warning(f"ID: {create_song.id}")
-          logging.warning("Keine Spotify URL und kein Bild")
-          logging.warning("-------------------------------")
-        
-        elif song['spotify_url'] == "":
-          problems += 1
-          logging.warning("-------------------------------")
-          logging.warning(f"Song: {song['song_title']} ({song['song_url']})")
-          logging.warning(f"Künstler: {song['artist']}")
-          logging.warning(f"ID: {create_song.id}")
-          logging.warning("Keine Spotify URL")
-          logging.warning("-------------------------------")
-        
-        elif song['image'] == "":
-          problems += 1
-          logging.warning("-------------------------------")
-          logging.warning(f"Song: {song['song_title']} ({song['song_url']})")
-          logging.warning(f"Künstler: {song['artist']}")
-          logging.warning(f"ID: {create_song.id}")
-          logging.warning("Kein Bild")
-          logging.warning("-------------------------------")
-
         print(f"Successfully added Song {song['song_title']} - {song['artist']}")
         print("------")
 
@@ -688,16 +660,9 @@ async def get_songs(problems, index, number):
           print(f"Successfully added DanceSong {song['song_title']} = {dance['dance']}: {dance['rating']}")
         print()
   
-  except:
-    print(f"\n\nStopped at {idx}")
-
-    data = {
-      'number': number+1,
-      'last_id': idx
-    }
-
-    with open('run.json', 'w', encoding='utf-8') as f:
-      json.dump(data, f, ensure_ascii=False, indent=2)
+  except Exception as e:
+    print(e)
+    print(f"\n\nStopped at {link}")
 
 async def get_charts():
   
@@ -1044,34 +1009,34 @@ season_list = ["11-12", "10", "4", "5-6"]
 
 async def main():
 
-  with open('run.json') as file:
-    run_stats = json.load(file)
-    print("Loaded all Run Data")
-    print()
-
   await prisma.connect()
+  """
+  await prisma.dancesong.delete_many()
+  await prisma.songtag.delete_many()
+  await prisma.song.delete_many()
+  await prisma.tag.delete_many()
+  await prisma.dance.delete_many()
+  await prisma.artist.delete_many()
 
-  if run_stats['number'] == 0:
-    await prisma.dancesong.delete_many()
-    await prisma.songtag.delete_many()
-    await prisma.song.delete_many()
-
-    await get_tags()
-    await get_dances()
-
-  problems = 0
-  problems = await get_songs(problems, run_stats['last_id'], run_stats['number'])
+  await prisma.query_raw("SET FOREIGN_KEY_CHECKS = 0;")
+  await prisma.query_raw("TRUNCATE TABLE artists;")
+  await prisma.query_raw("TRUNCATE TABLE songs;")
+  await prisma.query_raw("TRUNCATE TABLE tags;")
+  await prisma.query_raw("TRUNCATE TABLE dances;")
+  await prisma.query_raw("TRUNCATE TABLE dancesongs;")
+  await prisma.query_raw("TRUNCATE TABLE songtags;")
+  await prisma.query_raw("SET FOREIGN_KEY_CHECKS = 1;") 
+  
+  await get_tags()
+  await get_dances()
+  
+  await get_songs()
+  """
+  #await get_recs()
 
   #await get_charts()
 
-  #await get_recs()
-
   await prisma.disconnect()
-
-  print(f"Anzahl manuell Nachzuarbeitender Songs: {problems}")
-  logging.warning("-------------------------------")
-  logging.warning("-------------------------------")
-  logging.warning(f"Anzahl manuell Nachzuarbeitender Songs: {problems}")
 
 if __name__ == '__main__':
   asyncio.run(main())
