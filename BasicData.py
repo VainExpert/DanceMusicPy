@@ -69,6 +69,7 @@ halloween_songs = [
     'Season of the Witch',
     'I Put a Spell on You',
     'Dragula',
+    'Dracula',
     'Werewolves of London',
     'Bark at the Moon',
     'Die Hexen kommen',
