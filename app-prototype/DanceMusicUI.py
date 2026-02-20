@@ -11,7 +11,7 @@ import soundfile as sf
 from bs4 import BeautifulSoup
 import requests
 
-from MusicBG import *
+from helpers.MusicBG import *
 from PIL import Image
 
 samplerate = 44100  # Hertz

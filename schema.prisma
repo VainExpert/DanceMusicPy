@@ -1,6 +1,5 @@
 generator client {
-  provider             = "prisma-client-py"
-  recursive_type_depth = 5
+  provider = "prisma-client-py"
 }
 
 datasource db {
@@ -28,6 +27,8 @@ model User {
   logEntries      LogEntry[]
   danceScores     DanceScore[]
   recommendations Recommendation[]
+  songFeedbacks   SongFeedback[]
+  danceFeedbacks  DanceFeedback[]
 
   @@map("users")
 }
@@ -53,28 +54,34 @@ model Song {
   checked       Boolean
   appleMusicUrl String    @db.Text
   spotifyUrl    String    @db.Text
+  youtubeUrl    String    @db.Text
   shazam        Boolean   @default(true)
+  genre         String?
 
   danceSongs      DanceSong[]
   logEntries      LogEntry[]
   charts          Chart[]
   recommendations Recommendation[]
   songTags        SongTag[]
+  feedbacks       SongFeedback[]
 
   @@map("songs")
 }
 
 model Dance {
-  id    Int    @id @default(autoincrement())
-  name  String @unique
-  meter String
-  bpm   String
-  mpm   String
-  type  String
+  id            Int       @id @default(autoincrement())
+  name          String    @unique
+  meter         String
+  bpm           String
+  mpm           String
+  type          String
+  avgScore      Int       @default(0)
+  votes         Int       @default(0)
 
   danceSongs      DanceSong[]
   danceScores     DanceScore[]
   recommendations Recommendation[]
+  feedbacks       DanceFeedback[]
 
   @@map("dances")
 }
@@ -100,6 +107,44 @@ model DanceScore {
   votes 	  Int
 
   @@map("dancescores")
+}
+
+model SongFeedback {
+  id        Int      @id @default(autoincrement())
+  username  String   @map("username")
+  user      User     @relation(fields: [username], references: [username])
+
+  songId    Int      @map("song_id")
+  song      Song     @relation(fields: [songId], references: [id])
+
+  value     Int      //  1 = like, -1 = dislike
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  @@unique([username, songId])
+  @@index([username])
+  @@index([songId])
+  @@map("songfeedback")
+}
+
+model DanceFeedback {
+  id        Int      @id @default(autoincrement())
+  username  String   @map("username")
+  user      User     @relation(fields: [username], references: [username])
+
+  danceName String   @map("dance_name")
+  dance     Dance    @relation(fields: [danceName], references: [name])
+
+  value     Int      //  1 = like, -1 = dislike
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  @@unique([username, danceName])
+  @@index([username])
+  @@index([danceName])
+  @@map("dancefeedback")
 }
 
 model LogEntry {
@@ -142,7 +187,7 @@ model Chart {
   songId    Int  @map("song_id")
   song      Song @relation(fields: [songId], references: [id])
   placement Int
-  previous  Int
+  previous  Int?
 
   @@map("charts")
 }

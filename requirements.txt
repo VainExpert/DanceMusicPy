@@ -1,0 +1,14 @@
+bs4
+requests
+shazamio
+asyncio
+prisma
+spotipy
+fastapi
+pydantic
+logging
+sounddevice
+soundfile
+numpy
+matplotlib
+wordcloud
