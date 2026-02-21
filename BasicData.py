@@ -1,4 +1,5 @@
 
+import argparse
 from collections.abc import Set
 from typing import Any, Dict, List
 from bs4 import BeautifulSoup
@@ -227,6 +228,11 @@ oktoberfest_songs = [
     "Maßkrug",
     "Beerfest",
 ]
+
+def parse_args() -> argparse.Namespace:
+  p = argparse.ArgumentParser(description="Scrape tanzmusik website.")
+  p.add_argument("--last-artist", type=str, default="", help="the last artist that was processed in the previous run, to allow resuming without duplicates (optional)")
+  return p.parse_args()
 
 async def get_shazam_tracks(song_data):
 
@@ -934,7 +940,7 @@ async def get_tags():
     print(f"Successfully added Tag {tag_list[i]}")
   print()
 
-async def get_songs():
+async def get_songs(last_artist=""):
   
   start_url = "https://www.tanzmusik-online.de/music"
 
@@ -949,7 +955,7 @@ async def get_songs():
   soup = BeautifulSoup(content, 'html.parser')
 
   interpreten_divs = soup.find_all('div', class_='col-lg-3 col-md-4 col-sm-6 col-xs-offset-1 col-xs-12')
-
+  """
   interpreten = [div.find('a').get_text() for div in interpreten_divs if div.find('a')]
   for interpret in interpreten:
     create_artist = await prisma.artist.create(
@@ -959,11 +965,17 @@ async def get_songs():
       )
     print(f"Successfully added Artist {interpret}")
   print()
-
+  """
   links = [div.find('a')['href'] for div in interpreten_divs if div.find('a')]
 
+  start = 0
+  if last_artist:
+    last_artist_record = await prisma.artist.find_first(where={"name": last_artist})
+    start = last_artist_record.id - 1
+    print(f"Starting from: {last_artist} (ID {last_artist_record.id}) at index {start} in links")
+
   try:
-    for idx in range(len(links)):
+    for idx in range(start, len(links)):
 
       link = links[idx]
       
@@ -1558,8 +1570,11 @@ season_list = ["11-12", "10", "4", "5-6", "12-1", "2", "2-3", "9-10"]
 
 async def main():
 
+  args = parse_args()
+
   await prisma.connect()
 
+  """ 
   await prisma.chart.delete_many()
   await prisma.recommendation.delete_many()
   await prisma.dancesong.delete_many()
@@ -1582,8 +1597,9 @@ async def main():
   
   await get_tags()
   await get_dances()
+  """
   
-  await get_songs()
+  await get_songs(args.last_artist)
 
   await get_charts()
   await get_recs()
